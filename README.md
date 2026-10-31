@@ -2,7 +2,7 @@
 
 为 Codex 设计的任务调度插件：先估计任务能力下限与主 chat 允许的上限，再把**模型、推理难度、速度、优先级和价格**一起比较。优先把独立任务拆成可见、可恢复的普通 thread。Claude Code 提供兼容入口，Codex 是主要执行宿主。
 
-当前为 **v0.1 实验实现**：核心策略、Codex JSON-RPC 路由代理、独立 thread 调度、MCP 工具、共同 hook 和 Claude 启动器已经实现。尚未用真实付费模型做端到端验收，也未向官方插件目录提交。仓库中的演示分数和价格全部为虚构数据。
+当前为 **v0.1.1 实验实现**：核心策略、Codex JSON-RPC 路由代理、独立 thread 调度、MCP 工具、共同 hook、公开网页榜单缓存和 Claude 启动器已经实现。尚未用真实付费模型做端到端验收，也未向官方插件目录提交。仓库中的演示分数和价格全部为虚构数据。
 
 ## 选择规则
 
@@ -53,8 +53,8 @@ node bin/router.mjs assess --prompt '紧急：修复一个拼写错误' --projec
 ## 配置真实模型与价格
 
 1. 在仓库外或被忽略的 `.router/` 目录准备私有配置，参考 [配置结构](examples/routing.config.json)。模板故意没有模型绑定或价格；未填写时无法授权调用。
-2. 设置 `CDR_CONFIG` 为该文件的绝对路径。配置由用户控制，不从任务文本中读取上限或认证信息。
-3. 获取 [Artificial Analysis Data API](https://artificialanalysis.ai/data-api/docs) 的 key，在当前终端设置 `AA_API_KEY`，运行 `node bin/router.mjs ratings-refresh --output /absolute/path/to/ratings.local.json`。命令只请求榜单元数据，不请求任何 LLM。key 不写入配置、快照或日志。
+2. 设置 `CDR_CONFIG` 为该文件的绝对路径；未设置时默认在插件私有数据目录读取 `routing.json`。配置由用户控制，不从任务文本中读取上限或认证信息。未配置的初次安装进入评估/设置模式，不自动调用模型，也不会阻断其他正常聊天。
+3. **公开网页不需要 API key。** 可直接运行 `node bin/router.mjs cache`，或使用 `ratings-refresh-web --url https://artificialanalysis.ai/models/gpt-6-1-sol --output /absolute/path/to/ratings.local.json`。网页条目会保存精确评测档、指数版本、来源和读取时间。也可选择 [Data API](https://artificialanalysis.ai/data-api/docs)：设置 `AA_API_KEY` 后运行 `ratings-refresh --output /absolute/path/to/ratings.local.json`。两种方式都只请求榜单元数据，不请求 LLM。
 4. 运行 `node bin/router.mjs models` 读取实际 Codex 目录。默认通过 `codex app-server proxy` 连接已运行的 daemon。需要独立 app-server 时可以显式设置 `CDR_CODEX_COMMAND='["codex","app-server"]'`；它不是桌面 UI 接管开关。
 5. 为每个允许调用的**精确模型 + 推理档**填写一个绑定，并人工核对榜单条目的评测档位。`aaSlug` 必须存在于下载的快照中，`evidenceUrl` 指向对应 Artificial Analysis 证据。禁止用名称相似或高档分数补低档空缺。
 6. 为每个允许的模型 / 推理档 / 速度组合填写一条 `metrics`。记录当前价格、实测速率、证据链接与时间。USD 和 credits 不混算。时延估计含预期推理 token，实际工具耗时与排队可能使结果不同。估算预算不是账单硬限额。
@@ -87,15 +87,22 @@ codex plugin marketplace add TheSatchel/codex-difficulty-router
 
 对接 MCP 时可以显式使用 argv `node /absolute/path/to/codex-difficulty-router/bin/router.mjs mcp` 并传入 `CDR_CONFIG`。这适用于插件变量展开方式不同的宿主。
 
-插件暴露三个工具：
+插件暴露四个工具：
 
 | 工具 | 作用 |
 | --- | --- |
+| `router_cache` | 读内置缓存，刷新到期的公开网页数据；不需要 API key，也不调用模型。 |
 | `router_assess` | 自动分析当前任务与当前项目的文件名元数据，不调用模型。 |
 | `router_route` | 查询可用目录，返回模型 / effort / speed / 价格选择和原因；不调用模型。 |
 | `router_dispatch` | 校验任务 DAG 与主 chat 的实际模式；创建普通 thread，等待结果并交回主 chat。 |
 
 `router_dispatch` 输入见 [拆分示例](examples/dispatch.json)。主 chat 的模型负责判断是否真正可拆分，并整理输入、输出、验收条件和依赖；代码负责边界与调度。相同 `requestId` 和输入会复用已有收据，避免不确定结果产生重复调用。失败或需要人工处理时保存已创建的 thread ID，并停止后续依赖任务。不会自动发消息给其他既有 chat。
+
+### 内置缓存与联网刷新
+
+安装后的设置模式会尝试预热公开网页缓存。配置 `ratingSources` 为精确模型页 URL 数组后，每次读取路由策略也会检查刷新期限；默认每 5 分钟尝试联网更新，每个页面最多等待 4 秒。网络失败或网页结构变化时保留上次有效快照；超过 `maxRatingAgeHours`（默认 168 小时）的缓存不能授权模型调用。`N/A` 保持为未知，网页的 `Max` 评分不能借给 `Ultra` 或其他档。
+
+缓存按来源集合隔离，放在插件私有数据目录的 `ratings-cache/`，使用原子替换，并记录最近刷新结果。初次没有缓存又离线时报告不可用。配置 `refreshIntervalSeconds: 0` 可在每次策略读取时都尝试联网。`router_cache` 的 `force: true` 和 CLI `cache --force` 可立即重试。网页价格不能直接当作 Codex 订阅的 credits 价格，也不会把普通吞吐率套到 ultrafast。
 
 完整的 turn 级自动选模供 app-server 客户端接入：
 

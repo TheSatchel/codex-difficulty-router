@@ -104,7 +104,7 @@ test('MCP discovery and assessment work without model access or private config',
   const result = await cli(['mcp'], input.map(JSON.stringify).join('\n') + '\n', { ...process.env, CDR_CODEX_COMMAND: '["must-not-run"]' });
   assert.equal(result.code, 0, result.stderr);
   const messages = result.stdout.split('\n').filter(Boolean).map(JSON.parse);
-  assert.equal(messages.find(x => x.id === 2).result.tools.length, 3);
+  assert.equal(messages.find(x => x.id === 2).result.tools.length, 4);
   const value = JSON.parse(messages.find(x => x.id === 3).result.content[0].text); assert.equal(value.priority, 'urgent');
 });
 

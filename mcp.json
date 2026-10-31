@@ -4,8 +4,7 @@
     "difficulty-router": {
       "type": "stdio",
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/router.mjs", "mcp"],
-      "env": { "CDR_CONFIG": "${CDR_CONFIG}" }
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/router.mjs", "mcp"]
     }
   }
 }

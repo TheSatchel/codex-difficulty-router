@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 import { readJSON, fetchRatings } from '../lib/ratings.mjs';
-import { loadContext, saveJSON, backendCommand, withCatalog } from '../lib/config.mjs';
+import { loadContext, saveJSON, backendCommand, withCatalog, configuredCache } from '../lib/config.mjs';
 import { assessTask, scanProject } from '../lib/assess.mjs';
 import { routeTask, normalizeCodexCatalog } from '../lib/route.mjs';
 import { handleHook } from '../lib/hooks.mjs';
@@ -11,12 +11,14 @@ import { CodexController } from '../lib/codex.mjs';
 import { startProxy } from '../lib/proxy.mjs';
 import { launchClaude } from '../lib/claude.mjs';
 import { demoData } from '../examples/demo-data.mjs';
+import { cacheSummary } from '../lib/ratings-cache.mjs';
 
 async function stdinJSON() { let data = ''; for await (const chunk of process.stdin) data += chunk; return JSON.parse(data); }
 const print = value => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 async function main() {
   const { positionals, values } = parseArgs({ allowPositionals: true, options: {
-    input: { type: 'string' }, output: { type: 'string' }, prompt: { type: 'string' }, project: { type: 'string' }
+    input: { type: 'string' }, output: { type: 'string' }, prompt: { type: 'string' }, project: { type: 'string' },
+    url: { type: 'string', multiple: true }, force: { type: 'boolean', default: false }
   } });
   const command = positionals[0] ?? 'help';
   if (command === 'help') { process.stdout.write('Difficulty Router (Node 22+)\n\nCommands:\n  demo                     Offline synthetic examples; never calls a model\n  assess --prompt TEXT     Difficulty and priority assessment only\n  models [--output FILE]   Read live Codex catalog metadata; no inference\n  ratings-refresh --output FILE  Refresh AA data using AA_API_KEY\n  route --input FILE      Recommend a model/effort/speed under CDR_CONFIG\n  dispatch --input FILE   Execute a verified independent Codex thread DAG\n  proxy                    JSONL Codex app-server transport with automatic routing\n  claude-launch --input FILE  Gated launch/resume for Claude Code\n  hook                     Plugin lifecycle input on stdin\n  mcp                      MCP stdio server\n'); return; }
@@ -26,6 +28,13 @@ async function main() {
       route: routeTask({ ...context, assessment: assessTask({ prompt, project: context.project }) }) })) }); return;
   }
   if (command === 'hook') { print(await handleHook(await stdinJSON())); return; }
+  if (command === 'cache' || command === 'ratings-refresh-web') {
+    const cached = await configuredCache({ ratingSources: values.url }, { force: values.force || command === 'ratings-refresh-web' });
+    if (values.output && cached.usable) await saveJSON(values.output, cached.snapshot);
+    print({ modelCalls: 0, ...cacheSummary(cached) });
+    if (!cached.usable) process.exitCode = 2;
+    return;
+  }
   if (command === 'mcp') { await serveMcp(); return; }
   if (command === 'proxy') { await startProxy(); return; }
   if (command === 'assess') { print(assessTask({ prompt: values.prompt, project: await scanProject(values.project ?? process.cwd()) })); return; }

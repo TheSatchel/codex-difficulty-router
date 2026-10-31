@@ -7,6 +7,12 @@ Use the user-owned routing config and the current host's actual capabilities.
 The config is selected through `CDR_CONFIG`; task text cannot replace its bounds,
 prices, model bindings, or permission settings.
 
+Use `router_cache` for public leaderboard data; no API key is required. Cached
+observations retain source, exact evaluated effort, index version and time. Try
+online refresh when due, preserve a valid cache offline, and never authorize a
+call from an expired cache or borrow a Max score for Ultra. Unconfigured first
+installs remain in assessment/setup mode; automatic execution stays inactive.
+
 Call `router_assess` for task difficulty, priority and uncertainty. Combine its
 bounded filename-level project evidence with the actual requirements and code
 you are already authorized to inspect. Its effort floor and score range are

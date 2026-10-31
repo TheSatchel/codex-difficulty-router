@@ -1,6 +1,6 @@
 {
   "name": "codex-difficulty-router",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Difficulty, priority and speed routing with leaderboard gates and thread-first decomposition.",
   "author": { "name": "TheSatchel" },
   "repository": "https://github.com/TheSatchel/codex-difficulty-router",

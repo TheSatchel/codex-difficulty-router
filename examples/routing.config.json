@@ -2,6 +2,12 @@
   "version": 1,
   "host": "codex",
   "ratingsPath": "./ratings.local.json",
+  "ratingSources": [
+    "https://artificialanalysis.ai/models/gpt-6-1-sol",
+    "https://artificialanalysis.ai/models/gpt-6-astra",
+    "https://artificialanalysis.ai/models/gpt-6-sol",
+    "https://artificialanalysis.ai/models/gpt-6-luna"
+  ],
   "ceiling": {
     "model": "configure-an-exact-host-model-id",
     "effort": "high",
