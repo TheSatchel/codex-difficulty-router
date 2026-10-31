@@ -2,7 +2,7 @@
 
 为 Codex 设计的任务调度插件：先估计任务能力下限与主 chat 允许的上限，再把**模型、推理难度、速度、优先级和价格**一起比较。优先把独立任务拆成可见、可恢复的普通 thread。Claude Code 提供兼容入口，Codex 是主要执行宿主。
 
-当前为 **v0.2.0 实验实现**：全量榜单缓存、运行时模型目录匹配、核心策略、Codex JSON-RPC 路由代理、独立 thread 调度、MCP 工具、共同 hook 和 Claude 启动器已经实现。尚未用真实付费模型做端到端验收，也未向官方插件目录提交。演示分数和价格全部为虚构数据，真实榜单只存用户本机缓存。
+当前为 **v0.2.1 实验实现**：全量榜单缓存、运行时模型目录匹配、核心策略、Codex JSON-RPC 路由代理、独立 thread 调度、MCP 工具、分宿主 hook 和 Claude 启动器已经实现。尚未用真实付费模型做端到端验收，也未向官方插件目录提交。演示分数和价格全部为虚构数据，真实榜单只存用户本机缓存。
 
 ## 选择规则
 
@@ -84,6 +84,22 @@ codex plugin marketplace add TheSatchel/codex-difficulty-router
 ```
 
 在支持的桌面客户端中选择 Satchel Routing 并安装。按宿主提示审阅并信任插件 hook。不要使用绕过 trust 的启动参数。该动作不会被仓库代码自动执行。[插件打包与手动安装说明](https://developers.openai.com/plugins/build/plugins)说明了 marketplace 与官方公共目录的区别。
+
+### Codex 启动与 hooks 兼容修复
+
+Codex 的 MCP 文件使用 `${PLUGIN_ROOT}`；Claude Code 的 `.mcp.json` 使用 `${CLAUDE_PLUGIN_ROOT}`，二者不混用。Codex 兼容 manifest 指向 `codex.mcp.json`，Codex 原生命令 hook 放在 `hooks/codex-hooks.json`。入口脚本路径为绝对解析路径，支持 app-server 的 cwd 为 `/`。
+
+本机 `0.166.0-alpha.5.1` 的原生加载验证能启动插件 MCP，但没有登记包内 hooks。遇到这一情况，在已安装插件后运行：
+
+```sh
+node scripts/install-codex-hooks.mjs
+```
+
+这会备份并合并 `~/.codex/hooks.json`，只管理 Difficulty Router 自己的三条用户级 hook，保留其他 hooks；入口是缓存目录外的绝对路径启动器。不会改 `config.toml`、现有 MCP 覆盖、computer-use 设置或插件缓存/Git 工作区。启动器检查插件当前是否启用，并绑定到明确版本；插件关闭、卸载或版本尚未重新审阅时不执行旧规则。安装器不修改 trust 数据，仍需在 Codex `/hooks` 中审阅并信任。
+
+同步 hook 只读本地缓存，不发网络请求或模型请求。尚无路由配置时，UserPromptSubmit 仍会产出真实的任务难度/优先级评估；自动选模与拆分保持设置状态。不要把“已安装”或“脚本手工执行成功”当成 hook 已受信任并自动执行的证据。
+
+`node scripts/verify-codex-package.mjs` 使用独立临时 Codex 配置，经过原生插件安装/加载核对 MCP、从 `/` 启动、含空格路径和三个用户级 hooks 的发现状态；不发送模型 turn、不绕过 trust、不修改真实用户配置。
 
 对接 MCP 时可以显式使用 argv `node /absolute/path/to/codex-difficulty-router/bin/router.mjs mcp` 并传入 `CDR_CONFIG`。这适用于插件变量展开方式不同的宿主。
 

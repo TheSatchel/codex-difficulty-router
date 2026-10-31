@@ -64,6 +64,13 @@ test('expired cache plus network failure never authorizes routing', async t => {
   assert.equal(result.usable, false); assert.equal(result.status, 'unavailable');
 });
 
+test('synchronous cache-only reads neither contact the network nor create cache directories', async t => {
+  const folder = await directory(t); let requests = 0;
+  const result = await ratingsCache({ directory: path.join(folder, 'missing'), cacheOnly: true,
+    fetchImpl: async () => { requests++; throw new Error('Network must not run from synchronous hooks.'); } });
+  assert.equal(requests, 0); assert.equal(result.usable, false);
+});
+
 test('a malformed online page does not overwrite the good cache', async t => {
   const folder = await directory(t);
   const first = await ratingsCache({ directory: folder, urls: [url], fetchImpl: async () => response() });

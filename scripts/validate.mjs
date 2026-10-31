@@ -26,12 +26,14 @@ const pkg = await json('package.json');
 for (const file of ['plugin.json', '.codex-plugin/plugin.json', '.claude-plugin/plugin.json']) {
   const manifest = await json(file); assert.equal(manifest.name, pkg.name); assert.equal(manifest.version, pkg.version);
 }
-const hooks = await json('hooks/hooks.json');
-assert.deepEqual(Object.keys(hooks.hooks).sort(), ['PreToolUse', 'SessionStart', 'UserPromptSubmit']);
-for (const event of Object.values(hooks.hooks)) for (const group of event) for (const hook of group.hooks) {
-  assert.ok(hook.command.includes('${CLAUDE_PLUGIN_ROOT}/bin/router.mjs')); assert.equal(hook.type, 'command');
+for (const [file, placeholder] of [['hooks/codex-hooks.json', '${PLUGIN_ROOT}'], ['hooks/hooks.json', '${CLAUDE_PLUGIN_ROOT}']]) {
+  const hooks = await json(file);
+  assert.deepEqual(Object.keys(hooks.hooks).sort(), ['PreToolUse', 'SessionStart', 'UserPromptSubmit']);
+  for (const event of Object.values(hooks.hooks)) for (const group of event) for (const hook of group.hooks) {
+    assert.ok(hook.command.includes(`${placeholder}/bin/router.mjs`)); assert.equal(hook.type, 'command');
+  }
 }
-for (const file of ['bin/router.mjs', 'lib/mcp.mjs', 'skills/difficulty-routing/SKILL.md', 'mcp.json', '.mcp.json']) await access(path.join(root, file));
+for (const file of ['bin/router.mjs', 'lib/mcp.mjs', 'skills/difficulty-routing/SKILL.md', 'mcp.json', 'codex.mcp.json', '.mcp.json']) await access(path.join(root, file));
 const skill = await readFile(path.join(root, 'skills/difficulty-routing/SKILL.md'), 'utf8');
 assert.match(skill, /^---\nname: difficulty-routing\ndescription: .+\n---\n/);
 console.log(`Validated ${all.length} files: JSON, JavaScript syntax, plugin manifests, hook paths and skill metadata.`);

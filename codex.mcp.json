@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "difficulty-router": {
+      "command": "node",
+      "args": ["${PLUGIN_ROOT}/bin/router.mjs", "mcp"]
+    }
+  }
+}

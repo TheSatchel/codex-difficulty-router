@@ -4,7 +4,7 @@
     "difficulty-router": {
       "type": "stdio",
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/router.mjs", "mcp"]
+      "args": ["${PLUGIN_ROOT}/bin/router.mjs", "mcp"]
     }
   }
 }
