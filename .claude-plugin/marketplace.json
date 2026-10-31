@@ -1,6 +1,6 @@
 {
   "name": "satchel-routing",
-  "description": "Task difficulty, priority, speed and cost routing for Codex and Claude Code.",
+  "description": "Prompt-only routing guidance for Codex and Claude Code; no background services.",
   "owner": { "name": "TheSatchel" },
-  "plugins": [{ "name": "codex-difficulty-router", "source": "./", "description": "Codex-first difficulty and priority routing; Claude Code policy hooks." }]
+  "plugins": [{ "name": "codex-difficulty-router", "source": "./", "description": "Prompt guidance for difficulty, priority, speed and cost; no hooks or MCP servers." }]
 }

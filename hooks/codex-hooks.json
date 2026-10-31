@@ -1,8 +1,0 @@
-{
-  "description": "Codex-native hook paths; cached assessment only, no model/network calls from synchronous hooks.",
-  "hooks": {
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "node \"${PLUGIN_ROOT}/bin/router.mjs\" hook", "timeout": 10 }] }],
-    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "node \"${PLUGIN_ROOT}/bin/router.mjs\" hook", "timeout": 10 }] }],
-    "PreToolUse": [{ "hooks": [{ "type": "command", "command": "node \"${PLUGIN_ROOT}/bin/router.mjs\" hook", "timeout": 10 }] }]
-  }
-}

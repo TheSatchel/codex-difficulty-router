@@ -7,7 +7,6 @@ import { publicModelRecords, decodePublicData, fetchLeaderboard, normalizePublic
 import { ratingsCache } from '../lib/ratings-cache.mjs';
 import { matchAvailableModels } from '../lib/model-match.mjs';
 import { leaderboardFixture, modelRecord } from '../fixtures/leaderboard.mjs';
-import { codexBinary } from '../lib/config.mjs';
 
 test('all-model cache retains hundreds of vendors/variants, including retired and unrated entries', async t => {
   const directory = await mkdtemp(path.join(tmpdir(), 'cdr-full-')); t.after(() => rm(directory, { recursive: true, force: true }));
@@ -84,11 +83,4 @@ test('similar versions do not share a rating and ambiguous exact matches are exc
   assert.equal(result.bindings.length, 0);
   assert.equal(result.coverage.variants[0].status, 'not-in-leaderboard');
   assert.equal(result.coverage.variants[1].status, 'ambiguous');
-});
-
-test('desktop installs prefer their bundled Codex executable over an unrelated old PATH CLI', () => {
-  const bundled = '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex';
-  assert.equal(codexBinary({ platform: 'darwin', exists: candidate => candidate === bundled }), bundled);
-  assert.equal(codexBinary({ platform: 'darwin', exists: () => false }), 'codex');
-  assert.equal(codexBinary({ platform: 'linux', exists: () => true }), 'codex');
 });

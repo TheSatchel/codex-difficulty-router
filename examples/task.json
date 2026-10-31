@@ -1,4 +1,0 @@
-{
-  "prompt": "Find the source of the intermittent concurrency failure and explain its impact.",
-  "metadata": { "difficulty": "complex", "priority": "high" }
-}

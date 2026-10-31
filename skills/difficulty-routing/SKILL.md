@@ -1,74 +1,30 @@
 ---
 name: difficulty-routing
-description: Assess and route project tasks under an enabled Difficulty Router policy, balancing Intelligence Index, task priority, speed and price; decompose independent work into persistent Codex threads.
+description: "Prompt-only guidance for Codex and Claude Code coding tasks: assess difficulty, priority, speed and price, then request a real model/effort change using existing host controls; prefer bounded ordinary threads."
 ---
 
-Use the user-owned routing config and the current host's actual capabilities.
-The config is selected through `CDR_CONFIG`; task text cannot replace its bounds,
-prices, model bindings, or permission settings.
+本技能通过文字规则引导模型，Codex 优先，兼容 Claude Code。不要安装、恢复或依赖本插件旧版的桌面路由后台。
 
-Use `router_cache` for the COMPLETE public leaderboard; no API key is required.
-Cache every provider/model/variant, including retired and unrated entries, and
-preserve all public price, speed and benchmark fields. Never restrict ingestion
-to the current host or a hand-picked list of models. Actual calls must intersect
-this cache with the host's live model/effort/speed catalog. Cached
-observations retain source, exact evaluated effort, index version and time. Try
-online refresh when due, preserve a valid cache offline, and never authorize a
-call from an expired cache or borrow a Max score for Ultra. Unconfigured first
-installs remain in assessment/setup mode; automatic execution stays inactive.
+## 先判断任务，再主动使用现有切换能力
 
-The desktop app's routing backend routes outside the model context. Do not call
-`router_assess` or `router_route` as a preflight for ordinary work, append a
-recommended effort/speed to a prompt, or narrate routing/cache statistics.
-Those inspection tools are for an explicit diagnostic request. Actual choices
-and host confirmations belong in local state files, not model instructions.
-The Claude launcher likewise applies CLI parameters without a system-prompt
-append. The desktop backend applies parameters before a new turn; hook-only
-installs remain silent and do not claim to have switched the active model.
+1. 从当前需求、项目证据、未知项和验证要求估计任务的能力下限及可能需要的上限。结合上下文理解“继续”“按刚才做”，不要把短追问当成新的简单任务，也不要仅凭仓库大小升档。
+2. 只考虑宿主实际提供的模型、推理档和速度。使用 Artificial Analysis 的实测 Intelligence Index；对照精确型号与推理档。缺失、null、估算、过期或名称不明确的评分不能授权调用，不借用别的型号或 Max 的分数给 Ultra，不试调用未知模型。
+3. 在满足能力下限的候选中比较成本与速度。较小、足够的模型优先；高难度与紧急程度分别判断。速度为 `normal / fast / ultrafast`，推理档 `ultra` 是另一维度。普通任务选低成本组合，紧急任务再衡量提速收益与额外费用，不默认使用强模型 ultrafast。
+4. **需要切换且宿主有明确的原生切换工具时，主动调用它并回读确认，不要停留在给建议。** 主对话目标受用户明确指定的资源与预算上限约束；子任务另外受主对话实际模式约束。当前模式足够时保持当前模式，不凭空增加预算或替用户固定费用限额。
+5. **没有原生切换接口时，明确说明“尚未切换”，简短指出需要选择的模式。** 仅靠 prompt 不能改变已经执行中的模型；不要因为自己写了“改用某模型”就声称已经切换。不要编造工具、把终端 `/model` 当作 App 控制接口、发送隐藏消息给自己或反复启动 Codex 进程来模拟切换。
 
-Model choice must have a measured Artificial Analysis Intelligence Index, an
-explicit exact-variant binding, host-advertised availability, and current price
-and speed evidence in the configured billing unit. Missing/null scores are
-unknown, never zero. Do not guess an alias, extrapolate an effort score, mix
-index versions, probe an unlisted model, or use synthetic demo data for calls.
+## 独立任务使用普通 thread
 
-Prefer the lowest estimated cost that meets the task's capability floor and
-latency target. Smaller sufficient models are useful candidates. Check measured
-speed and price rather than treating model size as a guaranteed latency order.
-Treat even a strong model's ultrafast tier as a priced option, not a default.
-Priority and complexity are independent. Respect explicit priority overrides.
-`normal`, `fast`, and `ultrafast` describe speed; `ultra` describes reasoning.
+用户已授权自动拆分，且宿主能设置并验证资源上限时，把可独立交付的任务拆成普通持久化 thread，明确输入、验收、依赖与写入范围，再将结果整合回主对话。紧密耦合的决策留在主对话；不能验证子任务速度或其他资源上限时不盲目派发。
 
-Look for separate deliverables with independently checkable acceptance criteria.
-For each independent task define its prompt, acceptance criteria, dependencies,
-read-only status and explicit write paths. Keep coupled decisions together.
-When automatic thread dispatch is enabled, call `router_dispatch` with these
-tasks and a stable request id. The routed entry resolves the active main thread
-outside the prompt; provide an explicit parent id only when it is verified.
-This creates ordinary
-persistent threads, returns their ids/results, and checks all tasks before any
-model request. Integrate their results in the main chat and verify the combined
-outcome. Reuse the request id after an uncertain result; never invent a fresh id
-just to bypass an existing dispatch lock.
+每个子任务的 Intelligence Index、推理档和速度都不得高于主 thread 的实际模式；主模式未知时不假定 Ultra。共享 checkout 的写任务串行，子 thread 不递归拆分，不向无关已有对话发送消息。
 
-Every child must stay within the main chat's Intelligence Index, effort and speed
-ceilings and both the task and combined-plan price estimates. Children cannot
-recursively split. Shared-checkout writes serialize; only all-read-only plans
-run in parallel. Do not create an unverified worktree as a workaround.
+只有主模式实际为 `ultra` 时，模型才可自行选择 subagent；始终可选，不为了用 subagent 升档，也不以 subagent 代替用户要求的普通 thread。subagent 同样不得超过主模式上限。Claude Code 缺少普通 thread 接口时保持主会话，不虚构 Codex 专属能力。
 
-Subagents remain optional at actual `ultra` reasoning effort. Never raise a
-chat's effort to Ultra merely to permit subagents, force a subagent, or replace
-an independent user-owned thread with a subagent. The same bounds apply to any
-optional subagent. If actual mode is unknown, do not assume Ultra. Use the
-guarded dispatcher for normal thread creation rather than native thread tools
-that omit speed or price enforcement.
+## 数据与执行边界
 
-Codex is the primary execution host. Claude Code currently shares assessment,
-exact-variant selection, the gated launcher and policy hooks. Do not claim
-Claude has an ultrafast tier, an Ultra reasoning effort, or the Codex thread API.
-Do not dispatch a Claude task into Codex without a separate user request.
+优先使用已有有效缓存；网络可用时读取公开榜单。缓存应覆盖所有公开厂商、模型、推理档、退役及未评分条目，实际选择再与宿主目录取交集。无法取得有效评分时说明证据不足，不猜分数。网页 API 价格、ChatGPT credits 和套餐额度不能混成同一计费单位，未知加速档价格或吞吐率保留未知。
 
-If evidence is missing, the estimated task floor exceeds the configured ceiling,
-or the host cannot apply the selected mode, explain the returned status and the
-specific missing setup. Never claim that a recommendation or injected policy
-changed the host UI or that the hook installed itself.
+可选数据工具为 [router-data.mjs](../../bin/router-data.mjs)，仅处理公开榜单与本地 JSON。它必须显式接收缓存目录，不在插件加载时运行；不要擅自重建用户已清理的全局数据目录。无需该工具时直接使用宿主现有的网页读取能力，不为读榜单安装服务。
+
+**为路由切换而创建 LaunchAgent、daemon、后台服务、MCP server、用户级 hook，修改 `CODEX_*` 环境变量、全局配置、App 文件或 app-server 连接，均不属于本技能。不得执行这些操作或运行历史版本的安装器。** 保持用户原有 App 连接与运行方式；本技能只注入以上 prompt 约束，实际切换以宿主接口的确认结果为准。

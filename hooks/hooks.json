@@ -1,8 +1,0 @@
-{
-  "description": "Leaderboard, price, speed and main-chat bounds; no model calls from hooks.",
-  "hooks": {
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/router.mjs\" hook", "timeout": 10 }] }],
-    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/router.mjs\" hook", "timeout": 10 }] }],
-    "PreToolUse": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/router.mjs\" hook", "timeout": 10 }] }]
-  }
-}

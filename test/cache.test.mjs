@@ -6,7 +6,6 @@ import path from 'node:path';
 import { parseModelPage } from '../lib/web-ratings.mjs';
 import { leaderboardFixture, modelRecord } from '../fixtures/leaderboard.mjs';
 import { ratingsCache } from '../lib/ratings-cache.mjs';
-import { handleHook } from '../lib/hooks.mjs';
 import { ratingFor } from '../lib/ratings.mjs';
 
 // Fictional page structure/values for parser behavior, not leaderboard data.
@@ -115,19 +114,4 @@ test('partial network success refreshes good rows while preserving older rows an
   assert.equal(second.snapshot.models.find(row => row.slug === 'other').observedAt, first.snapshot.fetchedAt);
   assert.equal(second.snapshot.models.find(row => row.slug === 'example').observedAt, new Date(now + 1000).toISOString());
   assert.equal(second.snapshot.fetchedAt, first.snapshot.fetchedAt);
-});
-
-test('installation without config enters setup mode and leaves unrelated chat work available', async t => {
-  const folder = await directory(t), previousData = process.env.PLUGIN_DATA, previousConfig = process.env.CDR_CONFIG;
-  process.env.PLUGIN_DATA = folder; delete process.env.CDR_CONFIG;
-  t.after(() => {
-    if (previousData === undefined) delete process.env.PLUGIN_DATA; else process.env.PLUGIN_DATA = previousData;
-    if (previousConfig === undefined) delete process.env.CDR_CONFIG; else process.env.CDR_CONFIG = previousConfig;
-  });
-  const fixture = leaderboardFixture([modelRecord('example', 'Example (Max)', 42)]);
-  await ratingsCache({ directory: path.join(folder, 'ratings-cache'), fetchImpl: fixture.fetchImpl });
-  const hook = await handleHook({ hook_event_name: 'UserPromptSubmit', session_id: 'setup', prompt: 'Explain this code.' });
-  assert.deepEqual(hook, {});
-  assert.equal(hook.decision, undefined);
-  assert.deepEqual(await handleHook({ hook_event_name: 'PreToolUse', tool_name: 'Agent', tool_input: {} }), {});
 });
