@@ -1,0 +1,10 @@
+{
+  "name": "satchel-routing",
+  "interface": { "displayName": "Satchel Routing" },
+  "plugins": [{
+    "name": "codex-difficulty-router",
+    "source": { "source": "local", "path": "./" },
+    "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+    "category": "Productivity"
+  }]
+}

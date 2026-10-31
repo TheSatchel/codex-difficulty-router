@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "codex-difficulty-router",
+  "version": "0.1.0",
+  "description": "Assess project/task difficulty and priority; route rated models within the main chat ceiling; prefer independent threads.",
+  "author": { "name": "TheSatchel", "url": "https://github.com/TheSatchel" },
+  "repository": "https://github.com/TheSatchel/codex-difficulty-router",
+  "license": "MIT",
+  "extensions": { "com.openai": { "hooks": "./hooks/hooks.json" } }
+}

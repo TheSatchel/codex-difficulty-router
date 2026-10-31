@@ -1,0 +1,8 @@
+{
+  "name": "codex-difficulty-router",
+  "version": "0.1.0",
+  "description": "Shared task difficulty and priority assessment with strict model and delegation gates. Codex is the primary host.",
+  "author": { "name": "TheSatchel" },
+  "repository": "https://github.com/TheSatchel/codex-difficulty-router",
+  "license": "MIT"
+}

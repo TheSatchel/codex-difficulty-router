@@ -1,0 +1,11 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "difficulty-router": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/router.mjs", "mcp"],
+      "env": { "CDR_CONFIG": "${CDR_CONFIG}" }
+    }
+  }
+}

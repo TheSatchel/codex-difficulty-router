@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "host": "codex",
+  "ratingsPath": "./ratings.local.json",
+  "ceiling": {
+    "model": "configure-an-exact-host-model-id",
+    "effort": "high",
+    "speed": "fast"
+  },
+  "maxRatingAgeHours": 168,
+  "autoThreads": true,
+  "maxThreads": 4,
+  "economics": {
+    "unit": "USD",
+    "maxEstimatedCost": 0.1,
+    "maxPlanEstimatedCost": 0.3,
+    "maxMetricsAgeHours": 168,
+    "tokenEstimate": { "input": 4000, "output": 1000, "reasoning": 2000 },
+    "latencyTargetsSeconds": { "background": null, "normal": null, "high": 30, "urgent": 10 }
+  },
+  "bindings": [],
+  "metrics": []
+}

@@ -1,0 +1,16 @@
+{
+  "name": "codex-difficulty-router",
+  "version": "0.1.0",
+  "description": "Leaderboard-gated difficulty, priority and speed routing for Codex, with Claude Code policy hooks.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "bin": { "codex-difficulty-router": "bin/router.mjs" },
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/validate.mjs",
+    "demo": "node bin/router.mjs demo"
+  },
+  "repository": { "type": "git", "url": "https://github.com/TheSatchel/codex-difficulty-router.git" }
+}
