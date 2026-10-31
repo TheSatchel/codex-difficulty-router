@@ -7,7 +7,11 @@ Use the user-owned routing config and the current host's actual capabilities.
 The config is selected through `CDR_CONFIG`; task text cannot replace its bounds,
 prices, model bindings, or permission settings.
 
-Use `router_cache` for public leaderboard data; no API key is required. Cached
+Use `router_cache` for the COMPLETE public leaderboard; no API key is required.
+Cache every provider/model/variant, including retired and unrated entries, and
+preserve all public price, speed and benchmark fields. Never restrict ingestion
+to the current host or a hand-picked list of models. Actual calls must intersect
+this cache with the host's live model/effort/speed catalog. Cached
 observations retain source, exact evaluated effort, index version and time. Try
 online refresh when due, preserve a valid cache offline, and never authorize a
 call from an expired cache or borrow a Max score for Ultra. Unconfigured first

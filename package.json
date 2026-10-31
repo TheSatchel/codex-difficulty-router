@@ -1,6 +1,6 @@
 {
   "name": "codex-difficulty-router",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Leaderboard-gated difficulty, priority and speed routing for Codex, with Claude Code policy hooks.",
   "type": "module",
   "private": true,

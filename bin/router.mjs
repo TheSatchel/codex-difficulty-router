@@ -12,6 +12,7 @@ import { startProxy } from '../lib/proxy.mjs';
 import { launchClaude } from '../lib/claude.mjs';
 import { demoData } from '../examples/demo-data.mjs';
 import { cacheSummary } from '../lib/ratings-cache.mjs';
+import { matchAvailableModels } from '../lib/model-match.mjs';
 
 async function stdinJSON() { let data = ''; for await (const chunk of process.stdin) data += chunk; return JSON.parse(data); }
 const print = value => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
@@ -21,6 +22,7 @@ async function main() {
     url: { type: 'string', multiple: true }, force: { type: 'boolean', default: false }
   } });
   const command = positionals[0] ?? 'help';
+  if (command === 'help') process.stdout.write('Cache commands:\n  cache [--force]          Cache the COMPLETE public leaderboard (all vendors, variants and retired models)\n  coverage [--input FILE]  Intersect the cache with live Codex model/list, or an explicit host catalog file\n  ratings-refresh-web --url URL [--output FILE]  Optional targeted detail-page import\n\n');
   if (command === 'help') { process.stdout.write('Difficulty Router (Node 22+)\n\nCommands:\n  demo                     Offline synthetic examples; never calls a model\n  assess --prompt TEXT     Difficulty and priority assessment only\n  models [--output FILE]   Read live Codex catalog metadata; no inference\n  ratings-refresh --output FILE  Refresh AA data using AA_API_KEY\n  route --input FILE      Recommend a model/effort/speed under CDR_CONFIG\n  dispatch --input FILE   Execute a verified independent Codex thread DAG\n  proxy                    JSONL Codex app-server transport with automatic routing\n  claude-launch --input FILE  Gated launch/resume for Claude Code\n  hook                     Plugin lifecycle input on stdin\n  mcp                      MCP stdio server\n'); return; }
   if (command === 'demo') {
     const context = demoData();
@@ -36,6 +38,18 @@ async function main() {
     return;
   }
   if (command === 'mcp') { await serveMcp(); return; }
+  if (command === 'coverage') {
+    const cached = await configuredCache();
+    if (!cached.usable) { print({ modelCalls: 0, ...cacheSummary(cached) }); process.exitCode = 2; return; }
+    let rpc;
+    try {
+      let catalog;
+      if (values.input) catalog = await readJSON(values.input);
+      else { rpc = new RpcProcess(backendCommand()); await rpc.initialize(); catalog = normalizeCodexCatalog(await rpc.models()); }
+      print({ modelCalls: 0, cache: cacheSummary(cached), host: matchAvailableModels(cached.snapshot, catalog).coverage });
+    } finally { rpc?.close(); }
+    return;
+  }
   if (command === 'proxy') { await startProxy(); return; }
   if (command === 'assess') { print(assessTask({ prompt: values.prompt, project: await scanProject(values.project ?? process.cwd()) })); return; }
   if (command === 'ratings-refresh') {

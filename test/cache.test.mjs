@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { parseModelPage, DEFAULT_WEB_SOURCES } from '../lib/web-ratings.mjs';
+import { parseModelPage } from '../lib/web-ratings.mjs';
+import { leaderboardFixture, modelRecord } from '../fixtures/leaderboard.mjs';
 import { ratingsCache } from '../lib/ratings-cache.mjs';
 import { handleHook } from '../lib/hooks.mjs';
 import { ratingFor } from '../lib/ratings.mjs';
@@ -99,8 +100,8 @@ test('installation without config enters setup mode and leaves unrelated chat wo
     if (previousData === undefined) delete process.env.PLUGIN_DATA; else process.env.PLUGIN_DATA = previousData;
     if (previousConfig === undefined) delete process.env.CDR_CONFIG; else process.env.CDR_CONFIG = previousConfig;
   });
-  await ratingsCache({ directory: path.join(folder, 'ratings-cache'), urls: DEFAULT_WEB_SOURCES,
-    fetchImpl: async source => ({ ok: true, url: source, text: async () => page() }) });
+  const fixture = leaderboardFixture([modelRecord('example', 'Example (Max)', 42)]);
+  await ratingsCache({ directory: path.join(folder, 'ratings-cache'), fetchImpl: fixture.fetchImpl });
   const hook = await handleHook({ hook_event_name: 'UserPromptSubmit', session_id: 'setup', prompt: 'Explain this code.' });
   assert.match(hook.hookSpecificOutput.additionalContext, /assessment-only setup mode/);
   assert.equal(hook.decision, undefined);
