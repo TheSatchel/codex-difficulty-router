@@ -48,6 +48,8 @@ test('Codex hook works from / with only PLUGIN_ROOT, including paths with spaces
       cwd: temporary, prompt: 'Urgent spelling typo.' }) });
   assert.equal(result.code, 0, result.stderr);
   const value = JSON.parse(result.stdout);
-  assert.match(value.hookSpecificOutput.additionalContext, /"difficulty":"simple"/);
-  assert.match(value.hookSpecificOutput.additionalContext, /"priority":"urgent"/);
+  assert.deepEqual(value, {});
+  const local = JSON.parse(await readFile(path.join(temporary, 'data/status/fixture.json'), 'utf8'));
+  assert.equal(local.assessment.difficulty, 'simple'); assert.equal(local.assessment.priority, 'urgent');
+  assert.equal(local.applied, false);
 });

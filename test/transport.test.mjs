@@ -51,6 +51,9 @@ test('proxy changes model/effort/speed in real JSON-RPC fields, including collab
   assert.equal(turn.params.serviceTier, 'default'); assert.equal(turn.params.serviceTierForTurn, 'default');
   assert.equal(turn.params.collaborationMode.settings.model, 'demo-small');
   assert.equal(turn.params.collaborationMode.settings.reasoning_effort, 'low');
+  assert.equal(turn.params.additionalContext, undefined);
+  assert.equal(turn.params.developerInstructions, undefined);
+  assert.ok(sent.find(x => x.method === 'thread/settings/update'));
   assert.equal(sent.find(x => x.method === 'thread/start').params.allowProviderModelFallback, false);
   assert.ok(result.stdout.split('\n').filter(Boolean).map(JSON.parse).some(x => x.id === 3 && x.result));
 });

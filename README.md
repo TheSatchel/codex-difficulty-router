@@ -2,7 +2,29 @@
 
 为 Codex 设计的任务调度插件：先估计任务能力下限与主 chat 允许的上限，再把**模型、推理难度、速度、优先级和价格**一起比较。优先把独立任务拆成可见、可恢复的普通 thread。Claude Code 提供兼容入口，Codex 是主要执行宿主。
 
-当前为 **v0.2.1 实验实现**：全量榜单缓存、运行时模型目录匹配、核心策略、Codex JSON-RPC 路由代理、独立 thread 调度、MCP 工具、分宿主 hook 和 Claude 启动器已经实现。尚未用真实付费模型做端到端验收，也未向官方插件目录提交。演示分数和价格全部为虚构数据，真实榜单只存用户本机缓存。
+当前为 **v0.3.0 实验实现**：为 macOS ChatGPT/Codex 桌面 App 提供后台路由接入，在原有聊天界面发送请求时自动设置模型、推理档和速度，并核对宿主实时状态。**不向模型上下文追加任何难度建议、路由策略或缓存统计。** 选择记录写在用户本地，真实榜单数据不进 Git；尚未向官方插件目录提交。
+
+## 在桌面 App 内使用
+
+安装插件后，在它的源码 checkout 或已安装目录运行一次：
+
+```sh
+node scripts/install-codex-desktop.mjs
+```
+
+安装器核对当前 App 内置的 `CODEX_APP_SERVER_WS_URL` 和 Unix WebSocket 支持，建立用户级 LaunchAgent 与私有 Unix socket，将 GUI 的后端地址指向路由服务。依赖按 lockfile 安装在用户私有 runtime，禁用安装脚本；保留原有 App 界面、登录、项目、流式回复与审批。不会改 App 的签名文件、插件缓存、全局 `config.toml`、原有 MCP 启动器或 computer-use 修复。
+
+**安装完成后完全退出 App（⌘Q），再从原来的图标打开。** 后端地址由 App 进程启动时读取；当前窗口不会凭空改连。此后直接在 App 里聊天，不需要另开终端。安装器不会中途重启当前 App 或把“服务已就绪”报告成“当前窗口已接入”。
+
+`~/.codex/difficulty-router/desktop/status.json` 区分服务运行、插件策略启用与 GUI 连接状态；该状态和每次原生设置回读可供核验。当前集成仅安装到已经核实支持此连接方式的 macOS App。
+
+默认上限取宿主默认模型中已经取得实测分数的最高能力档，速度上限取实际目录支持的最高档；每轮根据任务重新选较小、较便宜的足够组合。未设置私有 `CDR_CONFIG` 时会自动生成运行配置，无需手工填模板。单任务默认规划预算 0.1、子任务合计 0.3，单位为 **API-price-equivalent USD**：榜单 API 价格乘公开 ChatGPT purchased-credit 速度档比例，仅用于相对成本规划，不是实际账单、账户余额或硬消费限额。已有 `CDR_CONFIG` 时使用其明确配置。
+
+关闭或卸载插件后，保留的私有运行时继续转发 App 原生请求，并停止自动改写模型参数。移除整个后台接入并恢复原有环境：`node scripts/install-codex-desktop.mjs --uninstall`，随后重开 App。聊天和日志保留。升级此后台运行时前先退出已接入的 App，再重跑安装器。
+
+普通任务先选价格；高优先级再考虑 native fast / ultrafast，仍受价格约束。公开的订阅额度倍率和 purchased-credit 倍率分别保留，API key 计费不冒充 ChatGPT credits。没有实测速率的加速档只标记为“宿主声明的优先级档”，不编造 2x/8x 吞吐率或承诺时延。当前内置加速档价格策略有时效，过期时不自动选择缺少有效证据的 premium 档。
+
+`launches/<run-id>/routing.json` 保存该入口的配置，`events.jsonl` 记录本地路由事件；`sessions/<thread-id>.json` 保存宿主确认的实际模式与 turn ID。默认数据目录为 `~/.local/state/codex-difficulty-router`。SessionStart 与 UserPromptSubmit 正常输出 `{}`，评估可写本地状态；代理、子 thread 和 Claude 启动器也不追加路由 system/developer/context 文本。
 
 ## 选择规则
 
@@ -29,19 +51,20 @@
 | 实际切换模型、推理档和速度 | JSONL app-server 代理在每个新 turn 前写入真实参数 | 启动 / 恢复时应用 `--model`、`--effort`、`fastMode` |
 | 独立持久化 thread 自动执行与结果汇总 | 已实现，调用 `thread/start` 与 `turn/start` | 当前版本未实现独立会话 DAG 执行 |
 | `ultrafast` | 以实际账号模型目录为准 | 没有已核实的映射，拒绝发送 |
-| 插件 hook | 自动加入规则并检查可见的委派工具 | 同一套 hook |
+| 插件 hook | 静默记录本地评估；检查可见的委派工具 | 同一套 hook |
 
-**单独安装 hook 不会接管现有 Codex 桌面 chat 的传输，也不能改写正在执行的模型。** 完整的每轮自动路由需要由宿主集成下述代理。MCP 的 `router_route` 只返回建议，不声称改变了当前 UI。Claude 启动器也不会在一个已经运行的交互进程内自动切换每一轮；需要从启动器恢复会话。
+**App 内每轮自动路由使用上述桌面后台接入。** 单独安装 hook 不会改变请求参数，也不能改写已经发出的推理。MCP 的 `router_route` 是明确诊断时才使用的只读检查器；常规工作不自动调用它或给模型塞建议。独立 `codex-route` 入口保留作开发验证，不是桌面 App 的安装步骤。Claude 启动器在启动/恢复时选档。
 
 依据：[Codex app-server](https://learn.chatgpt.com/docs/app-server)、[Codex hooks](https://learn.chatgpt.com/docs/hooks)、[Codex speed](https://learn.chatgpt.com/docs/agent-configuration/speed)、[Claude fast mode](https://code.claude.com/docs/en/fast-mode)。宿主目录与实际返回值优先于文档中的示例型号。
 
 ## 离线运行
 
-需要 Node.js 22+；没有 npm 运行时依赖。
+需要 Node.js 22+。MCP、缓存与策略核心无第三方运行时依赖；桌面后台连接使用 lockfile 固定版本的 `ws`。
 
 ```sh
 git clone https://github.com/TheSatchel/codex-difficulty-router.git
 cd codex-difficulty-router
+npm ci --ignore-scripts --no-audit --no-fund
 npm run check
 npm test
 npm run demo
@@ -97,7 +120,7 @@ node scripts/install-codex-hooks.mjs
 
 这会备份并合并 `~/.codex/hooks.json`，只管理 Difficulty Router 自己的三条用户级 hook，保留其他 hooks；入口是缓存目录外的绝对路径启动器。不会改 `config.toml`、现有 MCP 覆盖、computer-use 设置或插件缓存/Git 工作区。启动器检查插件当前是否启用，并绑定到明确版本；插件关闭、卸载或版本尚未重新审阅时不执行旧规则。安装器不修改 trust 数据，仍需在 Codex `/hooks` 中审阅并信任。
 
-同步 hook 只读本地缓存，不发网络请求或模型请求。尚无路由配置时，UserPromptSubmit 仍会产出真实的任务难度/优先级评估；自动选模与拆分保持设置状态。不要把“已安装”或“脚本手工执行成功”当成 hook 已受信任并自动执行的证据。
+同步 hook 不发网络请求或模型请求。SessionStart 与 UserPromptSubmit 不向上下文返回评估，后者只写本地 telemetry；未配置时保持静默。不要把“已安装”或“脚本手工执行成功”当成 hook 已受信任并自动执行的证据。
 
 `node scripts/verify-codex-package.mjs` 使用独立临时 Codex 配置，经过原生插件安装/加载核对 MCP、从 `/` 启动、含空格路径和三个用户级 hooks 的发现状态；不发送模型 turn、不绕过 trust、不修改真实用户配置。
 
@@ -116,7 +139,7 @@ node scripts/install-codex-hooks.mjs
 
 ### 内置缓存与联网刷新
 
-安装后的设置模式会尝试预热**完整公开榜单**。`ratingsMode: "leaderboard"` 使用全量数据源，每次读取路由策略检查刷新期限；默认每 5 分钟尝试联网更新，页面和数据包请求分别最多等待 15 秒。网络失败或数据格式变化时保留上次有效快照；超过 `maxRatingAgeHours`（默认 168 小时）的缓存不能授权模型调用。`N/A` 保持未知，网页的 `Max` 评分不能借给 `Ultra`。显式配置 `ratingSources` 或 CLI `--url` 时才使用定向详情页导入。
+路由入口会预热**完整公开榜单**。`ratingsMode: "leaderboard"` 使用全量数据源，每次读取路由策略检查刷新期限；默认每 5 分钟尝试联网更新，页面和数据包请求分别最多等待 15 秒。网络失败或数据格式变化时保留上次有效快照；超过 `maxRatingAgeHours`（默认 168 小时）的缓存不能授权模型调用。`N/A` 保持未知，网页的 `Max` 评分不能借给 `Ultra`。显式配置 `ratingSources` 或 CLI `--url` 时才使用定向详情页导入。
 
 缓存按来源集合隔离，放在插件私有数据目录的 `ratings-cache/`，使用原子替换，并记录最近刷新结果。初次没有缓存又离线时报告不可用。配置 `refreshIntervalSeconds: 0` 可在每次策略读取时都尝试联网。`router_cache` 的 `force: true` 和 CLI `cache --force` 可立即重试。网页价格不能直接当作 Codex 订阅的 credits 价格，也不会把普通吞吐率套到 ultrafast。
 
@@ -128,7 +151,7 @@ node scripts/install-codex-hooks.mjs
 your Codex client -> node bin/router.mjs proxy -> codex app-server proxy
 ```
 
-代理保留 JSON-RPC、流式通知、审批和用户输入请求；新 turn 前检查榜单、宿主目录、价格与上限，写入 `model`、`effort`、`serviceTier` 和 `serviceTierForTurn`，并处理 `collaborationMode` 的覆盖优先级。`normal` 明确发送 `default`，避免继承上轮的高速档。活动 turn 使用 `turn/steer`，不伪装成已切换模型。`review/start` 与 `thread/compact/start` 会因缺少可验证的 turn 级覆盖而被拒绝，应改用经过路由的普通 turn。
+代理保留 JSON-RPC、流式通知、审批和用户输入请求；新 turn 前检查榜单、宿主目录、价格与上限，执行 `thread/settings/update`，核对 native `thread/settings/updated` 与 `thread/read`，再向 `turn/start` 写入 `model`、`effort`、`serviceTier` 和 `serviceTierForTurn`，并处理 `collaborationMode` 的覆盖优先级。确认失败就不发 turn。`normal` 明确发送 `default`，避免继承上轮的高速档；不追加 `additionalContext` 或 developer 指令。活动 turn 使用 `turn/steer`，不伪装成已切换模型。`review/start` 与 `thread/compact/start` 会因缺少可验证的 turn 级覆盖而被拒绝，应改用经过路由的普通 turn。
 
 CLI 也提供建议和显式执行：
 
@@ -157,6 +180,8 @@ node bin/router.mjs claude-launch --input /absolute/path/to/request.json
 ## 验证与数据
 
 运行 `npm run check` 和 `npm test`。测试覆盖缺失/过期评分、精确档位匹配、模型可用性、子任务上限、速度和价格取舍、合计预算、普通 thread DAG、失败后停止依赖、幂等收据、实际 JSON-RPC 参数与 MCP stdio。CI 在非草稿 PR 和手动运行时执行 Node 22/24 检查。
+
+`node scripts/verify-routed-host.mjs` 通过原生 Codex 验证 socket、设置更新、live readback 和三个速度档，**不发送推理**。加 `--inference` 才明确执行两个短的只读真实 turn，并检查任务变化是否产生宿主确认的不同模型/推理档。元数据验证、mock 测试与真实生成分别报告，互不替代。
 
 hook 的工具约束适用于宿主向 hook 暴露的委派调用，宿主权限和 sandbox 仍由宿主管理。仅凭插件不能证明任意第三方工具内部的模型调用也被拦截。项目扫描限于当前 checkout 的 `git ls-files` 元数据；不打开外部仓库、历史快照、`.env` 或对话原文。
 

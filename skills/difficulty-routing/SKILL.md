@@ -17,16 +17,14 @@ online refresh when due, preserve a valid cache offline, and never authorize a
 call from an expired cache or borrow a Max score for Ultra. Unconfigured first
 installs remain in assessment/setup mode; automatic execution stays inactive.
 
-Call `router_assess` for task difficulty, priority and uncertainty. Combine its
-bounded filename-level project evidence with the actual requirements and code
-you are already authorized to inspect. Its effort floor and score range are
-estimates, not a proof of the project's upper or lower engineering limits.
-
-Use `router_route` to compare exact model/effort variants and speed tiers. The
-result is a recommendation. Codex transport routing changes the actual fields
-at the next turn boundary; a hook or a recommendation cannot change the model
-already executing this turn. The Claude launcher applies a selection when
-starting or resuming a session.
+The desktop app's routing backend routes outside the model context. Do not call
+`router_assess` or `router_route` as a preflight for ordinary work, append a
+recommended effort/speed to a prompt, or narrate routing/cache statistics.
+Those inspection tools are for an explicit diagnostic request. Actual choices
+and host confirmations belong in local state files, not model instructions.
+The Claude launcher likewise applies CLI parameters without a system-prompt
+append. The desktop backend applies parameters before a new turn; hook-only
+installs remain silent and do not claim to have switched the active model.
 
 Model choice must have a measured Artificial Analysis Intelligence Index, an
 explicit exact-variant binding, host-advertised availability, and current price
@@ -45,7 +43,9 @@ Look for separate deliverables with independently checkable acceptance criteria.
 For each independent task define its prompt, acceptance criteria, dependencies,
 read-only status and explicit write paths. Keep coupled decisions together.
 When automatic thread dispatch is enabled, call `router_dispatch` with these
-tasks, the actual main thread id and a stable request id. This creates ordinary
+tasks and a stable request id. The routed entry resolves the active main thread
+outside the prompt; provide an explicit parent id only when it is verified.
+This creates ordinary
 persistent threads, returns their ids/results, and checks all tasks before any
 model request. Integrate their results in the main chat and verify the combined
 outcome. Reuse the request id after an uncertain result; never invent a fresh id

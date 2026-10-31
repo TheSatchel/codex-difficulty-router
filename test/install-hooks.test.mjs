@@ -48,8 +48,10 @@ test('bridge invokes the exact enabled installed version from / and returns real
   await mkdir(path.dirname(installedRoot), { recursive: true });
   await cp(root, installedRoot, { recursive: true, filter: p => !['.git', 'node_modules', '.router'].includes(path.basename(p)) });
   const result = await installCodexHooks({ codexDirectory: directory, version: '0.2.1', codexCommand: [process.execPath, fake] });
-  const assessment = await runBridge(result.bridge, '0.2.1', { ...process.env, CDR_CONFIG: path.join(directory, 'not-configured.json') },
+  const assessment = await runBridge(result.bridge, '0.2.1', { ...process.env, PLUGIN_DATA: directory, CDR_CONFIG: path.join(directory, 'not-configured.json') },
     { hook_event_name: 'UserPromptSubmit', session_id: 'test', cwd: directory, prompt: 'Urgent spelling typo.' });
   assert.equal(assessment.code, 0, assessment.stderr);
-  assert.match(JSON.parse(assessment.stdout).hookSpecificOutput.additionalContext, /"difficulty":"simple"/);
+  assert.deepEqual(JSON.parse(assessment.stdout), {});
+  const local = JSON.parse(await readFile(path.join(directory, 'status/test.json'), 'utf8'));
+  assert.equal(local.assessment.difficulty, 'simple');
 });

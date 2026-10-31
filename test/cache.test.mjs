@@ -71,6 +71,23 @@ test('synchronous cache-only reads neither contact the network nor create cache 
   assert.equal(requests, 0); assert.equal(result.usable, false);
 });
 
+test('a valid local cache read does not wait for an in-flight online refresh', async t => {
+  const folder = await directory(t);
+  await ratingsCache({ directory: folder, urls: [url], fetchImpl: async () => response() });
+  let release, began;
+  const held = new Promise(resolve => { release = resolve; });
+  const started = new Promise(resolve => { began = resolve; });
+  const refreshing = ratingsCache({ directory: folder, urls: [url], force: true,
+    fetchImpl: async () => { began(); await held; return response(); } });
+  await started;
+  let deadline;
+  try {
+    const local = await Promise.race([ratingsCache({ directory: folder, urls: [url], cacheOnly: true }),
+      new Promise((_resolve, reject) => { deadline = setTimeout(() => reject(new Error('A local cache read waited for network')), 1000); })]);
+    assert.equal(local.usable, true);
+  } finally { clearTimeout(deadline); release(); await refreshing; }
+});
+
 test('a malformed online page does not overwrite the good cache', async t => {
   const folder = await directory(t);
   const first = await ratingsCache({ directory: folder, urls: [url], fetchImpl: async () => response() });
@@ -110,7 +127,7 @@ test('installation without config enters setup mode and leaves unrelated chat wo
   const fixture = leaderboardFixture([modelRecord('example', 'Example (Max)', 42)]);
   await ratingsCache({ directory: path.join(folder, 'ratings-cache'), fetchImpl: fixture.fetchImpl });
   const hook = await handleHook({ hook_event_name: 'UserPromptSubmit', session_id: 'setup', prompt: 'Explain this code.' });
-  assert.match(hook.hookSpecificOutput.additionalContext, /assessment-only setup mode/);
+  assert.deepEqual(hook, {});
   assert.equal(hook.decision, undefined);
   assert.deepEqual(await handleHook({ hook_event_name: 'PreToolUse', tool_name: 'Agent', tool_input: {} }), {});
 });
