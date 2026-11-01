@@ -1,7 +1,7 @@
 {
   "name": "codex-difficulty-router",
-  "version": "0.4.0",
-  "description": "Prompt-only task routing guidance. No executable hooks, MCP services or desktop integration.",
+  "version": "0.5.0",
+  "description": "Coordinate in the main chat and delegate execution to native subagents within its limits. Prompt-only; no hooks or MCP services.",
   "author": { "name": "TheSatchel" },
   "repository": "https://github.com/TheSatchel/codex-difficulty-router",
   "license": "MIT",

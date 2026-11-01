@@ -1,6 +1,6 @@
 {
   "name": "satchel-routing",
-  "description": "Prompt-only routing guidance for Codex and Claude Code; no background services.",
+  "description": "Prompt-only native subagent routing for Codex and Claude Code; no background services.",
   "owner": { "name": "TheSatchel" },
-  "plugins": [{ "name": "codex-difficulty-router", "source": "./", "description": "Prompt guidance for difficulty, priority, speed and cost; no hooks or MCP servers." }]
+  "plugins": [{ "name": "codex-difficulty-router", "source": "./", "description": "Main chat coordinates; native subagents execute within its mode limits. No hooks or MCP servers." }]
 }
