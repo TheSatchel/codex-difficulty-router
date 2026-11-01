@@ -1,6 +1,6 @@
 # Codex Difficulty Router
 
-**v0.5.1：增加个人指令入口与可见路由检查，修正“技能已安装但正文未加载”的缺口。仍为纯 prompt／Skill 方案，执行优先委派原生 subagent。v0.3.0 的桌面接入方案已撤回。**
+**v0.6.0：内置完整公开榜单快照，并提供明确的评分查询入口，修正“没有读取数据就报告评分无法核实”的缺口。仍为 prompt／Skill 方案，执行使用原生 subagent。v0.3.0 的桌面接入方案已撤回。**
 
 插件给模型加载子代理路由规则：主对话保持当前模型，负责需求、规划、分配、验收和汇总；实际执行优先交给宿主原生 subagent，并在创建时选择合适的模型和推理档。没有 hook、MCP server、LaunchAgent、常驻进程、桌面连接代理或系统安装器，也不修改 App 及 `CODEX_*` 环境变量。不要运行历史版本中的桌面安装脚本。
 
@@ -31,22 +31,34 @@ Codex 在新运行开始时构建个人及项目指令链，已有会话不会�
 
 Codex 是主要宿主。Claude Code 共用规则并使用其已有 subagent 接口，不虚构其没有的参数。原生机制及默认继承行为见 [OpenAI Subagents 文档](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
 
-## 可选的完整榜单缓存
+## 完整榜单快照与评分查询
 
-数据工具与 Skill 加载分开，**不会自动执行**。它只读取公开 Artificial Analysis 数据和本地 JSON，不调用 LLM，不读取账号凭据，不启动 Codex，不连接或控制 App。
+插件随附 [data/leaderboard.json](data/leaderboard.json)，保存抓取时的全部公开条目、实测分数、未评分状态及原始指标，不是少量手写模型表。数据工具不在插件加载时运行；Skill 在实际任务开始、主模式已确认后明确调用它，不能把未查数据误报成模型无分。
+
+```sh
+node bin/router-data.mjs assess --model gpt-6-astra --effort max
+node bin/router-data.mjs assess --model gpt-6-astra --effort max --offline
+node bin/router-data.mjs assess --model gpt-6-astra --effort max --catalog /path/to/actual-host-catalog.json
+```
+
+`assess` 先尝试公开网页，失败时使用有效内置快照；`--offline` 只查内置快照，不访问网络。查询不会写文件、创建缓存目录、读取账号凭据、调用 LLM、启动 Codex 或控制 App。可用目录必须来自实际宿主，工具不自行探测；批量变体使用同一个数据快照。
+
+结果明确区分 `verified`、`unrated`、`not-in-leaderboard`、`ambiguous` 和数据不可用，包含来源、观测时间、指数版本与证据 URL。只有精确变体的有效实测分可以作为路由依据，不能借用 Max 分数给 Ultra。读取失败不等于榜单未评分。
+
+需要把刷新结果另外保存到用户明确选择的目录时，使用原有命令：
 
 ```sh
 node bin/router-data.mjs cache --cache-dir /explicit/user/chosen/directory
 node bin/router-data.mjs coverage --cache-dir /explicit/user/chosen/directory --catalog /path/to/host-catalog.json
 ```
 
-`--cache-dir` 必须明确填写，没有默认全局目录。初次没有缓存又离线时返回不可用，不补造数据。有效缓存可离线使用，过期数据不能授权调用。联网刷新失败保留上次有效快照，不修改其观测时间。
+`cache`／`coverage` 的 `--cache-dir` 必须明确填写，没有默认全局目录。`assess` 无需这个参数，使用内置快照回退。有效快照可离线使用，默认有效期 168 小时；过期数据不能授权调用。联网失败不会把旧观测时间改成当前时间。
 
 默认保存完整公开榜单，包括所有厂商、推理档、退役模型、未评分记录及原始公开价格／速度／benchmark 字段；数量以当期网页为准。候选匹配再使用用户提供的实际宿主目录，采用完整型号与精确推理档匹配，不维护少量手写模型白名单。
 
 宿主目录 JSON 为数组，每项包含 `host`、精确 `model`、可用 `efforts`，以及可选 `displayName`、`speeds`。工具不自行启动宿主来探测型号。
 
-来源：[Artificial Analysis 榜单](https://artificialanalysis.ai/leaderboards/models)。公开网页缓存无需 API key；缓存只存在用户明确选择的目录，不随插件发布，也不重新创建已删除的历史数据目录。
+来源：[Artificial Analysis 榜单](https://artificialanalysis.ai/leaderboards/models)。公开网页查询无需 API key；随插件发布的快照保留抓取时间和来源，不重新创建已删除的历史数据目录。发布新版时可以联网更新该文件，不能手填或估算缺失分数。
 
 ## 开发验证
 

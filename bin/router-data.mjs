@@ -4,15 +4,37 @@ import { parseArgs } from 'node:util';
 import { readJSON, requireValue } from '../lib/ratings.mjs';
 import { ratingsCache, cacheSummary } from '../lib/ratings-cache.mjs';
 import { matchAvailableModels } from '../lib/model-match.mjs';
+import { routingSnapshot, assessRating } from '../lib/rating-assessment.mjs';
 
 try {
   const { values, positionals } = parseArgs({ allowPositionals: true, options: {
     help: { type: 'boolean', short: 'h' }, 'cache-dir': { type: 'string' },
-    catalog: { type: 'string' }, force: { type: 'boolean', default: false }
+    catalog: { type: 'string' }, force: { type: 'boolean', default: false },
+    model: { type: 'string' }, effort: { type: 'string' }, offline: { type: 'boolean', default: false }
   } });
   const command = positionals[0] ?? 'help';
   if (values.help || command === 'help') {
-    process.stdout.write('Public ratings data only; no App control or model calls.\n\n  cache --cache-dir DIR [--force]\n  coverage --cache-dir DIR --catalog FILE\n\nAn explicit cache directory is required. Nothing runs automatically.\n');
+    process.stdout.write('Public ratings data only; no App control or model calls.\n\n  assess --model EXACT_ID --effort EFFORT [--catalog FILE] [--offline]\n  cache --cache-dir DIR [--force]\n  coverage --cache-dir DIR --catalog FILE\n\nAssess tries public data then the bundled snapshot, without writing files. Cache/coverage require an explicit cache directory. Nothing runs at plugin startup.\n');
+  } else if (command === 'assess') {
+    requireValue(values.model?.trim() && values.effort?.trim(), 'EXACT_MODE_REQUIRED', 'Supply the actual host model ID and reasoning effort.');
+    const loaded = await routingSnapshot({ offline: values.offline });
+    const report = { modelCalls: 0, source: loaded.source, usable: loaded.usable, refresh: loaded.refresh };
+    if (loaded.usable) {
+      report.rating = assessRating(loaded.snapshot, { model: values.model, effort: values.effort });
+      report.fetchedAt = loaded.snapshot.fetchedAt;
+      report.modelCount = loaded.snapshot.models.length;
+      if (values.catalog) {
+        const catalog = await readJSON(path.resolve(values.catalog));
+        requireValue(Array.isArray(catalog) && catalog.every(m => typeof m.model === 'string' && Array.isArray(m.efforts)),
+          'INVALID_CATALOG', 'The actual host catalog must be an array with model IDs and efforts.');
+        report.variants = catalog.flatMap(m => m.efforts.map(effort => assessRating(loaded.snapshot, { model: m.model, effort })));
+      }
+      if (!report.rating.verified) process.exitCode = 2;
+    } else {
+      report.error = loaded.error;
+      process.exitCode = 2;
+    }
+    console.log(JSON.stringify(report, null, 2));
   } else {
     requireValue(['cache', 'coverage'].includes(command), 'UNKNOWN_COMMAND', 'Only cache and coverage data commands are supported.');
     requireValue(values['cache-dir']?.trim(), 'EXPLICIT_CACHE_REQUIRED', 'Specify --cache-dir explicitly; there is no default global data directory.');

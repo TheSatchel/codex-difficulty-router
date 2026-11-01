@@ -1,6 +1,6 @@
 {
   "name": "codex-difficulty-router",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Coordinate in the main chat and delegate execution to native subagents within its limits. Prompt-only; no hooks or MCP services.",
   "author": { "name": "TheSatchel" },
   "repository": "https://github.com/TheSatchel/codex-difficulty-router",

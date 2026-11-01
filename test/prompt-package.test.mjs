@@ -4,6 +4,12 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const root = path.resolve(import.meta.dirname, '..');
+test('assessment requires an exact mode before reading ratings or contacting the network', () => {
+  const result = spawnSync(process.execPath, [path.join(root, 'bin/router-data.mjs'), 'assess'], { encoding: 'utf8' });
+  assert.equal(result.status, 1);
+  assert.equal(JSON.parse(result.stderr).code, 'EXACT_MODE_REQUIRED');
+});
+
 test('data helper refuses an implicit global cache before contacting the network', () => {
   const result = spawnSync(process.execPath, [path.join(root, 'bin/router-data.mjs'), 'cache'], { encoding: 'utf8' });
   assert.equal(result.status, 1);
