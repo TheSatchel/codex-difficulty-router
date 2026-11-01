@@ -5,16 +5,27 @@ import { readJSON, requireValue } from '../lib/ratings.mjs';
 import { ratingsCache, cacheSummary } from '../lib/ratings-cache.mjs';
 import { matchAvailableModels } from '../lib/model-match.mjs';
 import { routingSnapshot, assessRating } from '../lib/rating-assessment.mjs';
+import { routeTask } from '../lib/task-routing.mjs';
 
 try {
   const { values, positionals } = parseArgs({ allowPositionals: true, options: {
     help: { type: 'boolean', short: 'h' }, 'cache-dir': { type: 'string' },
     catalog: { type: 'string' }, force: { type: 'boolean', default: false },
-    model: { type: 'string' }, effort: { type: 'string' }, offline: { type: 'boolean', default: false }
+    model: { type: 'string' }, effort: { type: 'string' }, offline: { type: 'boolean', default: false },
+    request: { type: 'string' }
   } });
   const command = positionals[0] ?? 'help';
   if (values.help || command === 'help') {
-    process.stdout.write('Public ratings data only; no App control or model calls.\n\n  assess --model EXACT_ID --effort EFFORT [--catalog FILE] [--offline]\n  cache --cache-dir DIR [--force]\n  coverage --cache-dir DIR --catalog FILE\n\nAssess tries public data then the bundled snapshot, without writing files. Cache/coverage require an explicit cache directory. Nothing runs at plugin startup.\n');
+    process.stdout.write('Read-only ratings and route decisions; no App control or model calls.\n\n  route --request FILE [--offline]\n  assess --model EXACT_ID --effort EFFORT [--catalog FILE] [--offline]\n  cache --cache-dir DIR [--force]\n  coverage --cache-dir DIR --catalog FILE\n\nRoute/assess try public data then the bundled snapshot without writing files. Cache/coverage require an explicit cache directory. Nothing runs at plugin startup.\n');
+  } else if (command === 'route') {
+    requireValue(values.request?.trim(), 'ROUTE_REQUEST_REQUIRED', 'Supply an explicit routing request file.');
+    const request = await readJSON(path.resolve(values.request));
+    const policy = await readJSON(new URL('../data/routing-policy.json', import.meta.url));
+    const loaded = await routingSnapshot({ offline: values.offline });
+    const report = loaded.usable ? routeTask(loaded.snapshot, request, policy)
+      : { status: 'blocked', reason: 'ratings-unavailable', modelCalls: 0, selection: null, error: loaded.error };
+    console.log(JSON.stringify({ ...report, source: loaded.source, refresh: loaded.refresh }, null, 2));
+    if (report.status === 'blocked') process.exitCode = 2;
   } else if (command === 'assess') {
     requireValue(values.model?.trim() && values.effort?.trim(), 'EXACT_MODE_REQUIRED', 'Supply the actual host model ID and reasoning effort.');
     const loaded = await routingSnapshot({ offline: values.offline });

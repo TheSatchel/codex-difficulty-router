@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "minPairedTasks": 3,
+  "evidenceMaxAgeDays": 30,
+  "taskKinds": ["transform", "bounded-edit", "investigate", "design"],
+  "effortOrder": ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
+}

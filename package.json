@@ -1,7 +1,7 @@
 {
   "name": "codex-difficulty-router",
-  "version": "0.6.0",
-  "description": "Prompt-only native subagent routing for Codex and Claude Code, bounded by the main chat. No hooks, MCP servers or app connection changes.",
+  "version": "0.7.0",
+  "description": "Native subagent routing with deterministic task policies and acceptance evidence, bounded by the main chat. No hooks or services.",
   "type": "module",
   "private": true,
   "license": "MIT",

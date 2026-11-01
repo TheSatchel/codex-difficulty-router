@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "codex-difficulty-router",
-  "version": "0.6.0",
-  "description": "Prompt-only native subagent routing: the main chat coordinates, selects sufficient models and verifies work within its actual mode limits.",
+  "version": "0.7.0",
+  "description": "Native subagent routing with task-specific acceptance evidence, deterministic selection and a conservative parent-mode baseline.",
   "author": { "name": "TheSatchel", "url": "https://github.com/TheSatchel" },
   "repository": "https://github.com/TheSatchel/codex-difficulty-router",
   "license": "MIT"

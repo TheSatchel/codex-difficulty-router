@@ -1,7 +1,7 @@
 {
   "name": "codex-difficulty-router",
-  "version": "0.6.0",
-  "description": "Coordinate in the main chat and delegate execution to native subagents within its limits. Prompt-only; no hooks or MCP services.",
+  "version": "0.7.0",
+  "description": "Coordinate in the main chat; choose native subagents using deterministic policy and acceptance evidence. No hooks or MCP services.",
   "author": { "name": "TheSatchel" },
   "repository": "https://github.com/TheSatchel/codex-difficulty-router",
   "license": "MIT",
