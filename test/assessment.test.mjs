@@ -17,9 +17,9 @@ test('a measured exact model and effort yields its score and evidence', () => {
   assert.equal(r.indexVersion, '5.0'); assert.equal(r.observedAt, new Date(now).toISOString());
 });
 
-test('unrated, absent, estimated and ambiguous variants stay distinct and never borrow Max for Ultra', () => {
-  assert.equal(assessRating(snapshot(), { model: 'example', effort: 'high', now }).status, 'unrated');
-  assert.equal(assessRating(snapshot(), { model: 'example', effort: 'ultra', now }).status, 'not-in-leaderboard');
+test('strict mode preserves exact-only admission and ambiguous variants stay blocked', () => {
+  assert.equal(assessRating(snapshot(), { model: 'example', effort: 'high', now, allowEstimates: false }).status, 'unrated');
+  assert.equal(assessRating(snapshot(), { model: 'example', effort: 'ultra', now, allowEstimates: false }).status, 'not-in-leaderboard');
   assert.equal(assessRating(snapshot(), { model: 'estimated', effort: 'max', now }).verified, false);
   const duplicate = normalizePublicModels([...records, modelRecord('duplicate-max', 'Example (Max)', 43)], { now, indexVersion: '5.0' });
   assert.equal(assessRating(duplicate, { model: 'example', effort: 'max', now }).status, 'ambiguous');

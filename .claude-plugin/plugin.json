@@ -1,6 +1,6 @@
 {
   "name": "codex-difficulty-router",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Prompt-only native subagent routing within the main chat limits. Codex is the primary host.",
   "author": { "name": "TheSatchel" },
   "repository": "https://github.com/TheSatchel/codex-difficulty-router",
