@@ -3,5 +3,11 @@
   "minPairedTasks": 3,
   "evidenceMaxAgeDays": 30,
   "taskKinds": ["transform", "bounded-edit", "investigate", "design"],
-  "effortOrder": ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
+  "effortOrder": ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"],
+  "initialAllocation": {
+    "transform": { "effort": "low", "modelTier": "economy" },
+    "bounded-edit": { "effort": "medium", "modelTier": "balanced" },
+    "investigate": { "effort": "high", "modelTier": "strong" },
+    "design": { "effort": "max", "modelTier": "strong" }
+  }
 }

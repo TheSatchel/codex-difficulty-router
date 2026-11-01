@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "codex-difficulty-router",
-  "version": "0.8.0",
-  "description": "Native subagent routing with task-specific acceptance evidence, deterministic selection and a conservative parent-mode baseline.",
+  "version": "0.9.0",
+  "description": "Read the active session mode and explicitly allocate native subagent models and effort by task, with bounded estimates and acceptance evidence.",
   "author": { "name": "TheSatchel", "url": "https://github.com/TheSatchel" },
   "repository": "https://github.com/TheSatchel/codex-difficulty-router",
   "license": "MIT"

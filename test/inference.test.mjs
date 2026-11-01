@@ -56,12 +56,13 @@ test('inference is deterministic, leaves the source intact, and strict mode rema
   assert.equal(JSON.stringify(s), before);
   assert.equal(assessRating(s, { ...args, allowEstimates: false }).usableForRouting, false);
 });
-test('an inferred parent admits a baseline while strict routing blocks; effort caps still apply', () => {
+test('an inferred parent permits explicit task allocation while strict routing blocks; effort caps still apply', () => {
   const s = make(records);
   const request = { schemaVersion: 1, parent: { model: 'example', effort: 'ultra' }, task: { kind: 'design', profile: 'test-v1' },
-    catalog: [], inheritSpeed: true, priority: 'normal', evidence: [] };
+    catalog: [{ model: 'example', efforts: ['low', 'high', 'max', 'ultra'] }], inheritSpeed: true, priority: 'normal', evidence: [] };
   const r = routeTask(s, request, policy, { now });
-  assert.equal(r.status, 'parent-baseline'); assert.equal(r.usesEstimatedRatings, true);
+  assert.equal(r.status, 'task-policy-route'); assert.equal(r.usesEstimatedRatings, true);
+  assert.equal(r.selection.effort, 'max'); assert.equal(r.selection.inherit, false);
   assert.equal(r.ceilingBasis, 'estimated-reference');
   assert.equal(routeTask(s, { ...request, allowEstimates: false }, policy, { now }).status, 'blocked');
   const lower = { ...request, parent: { model: 'example', effort: 'max' }, catalog: [{ model: 'example', efforts: ['ultra'] }] };
